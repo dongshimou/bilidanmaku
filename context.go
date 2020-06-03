@@ -165,6 +165,7 @@ type GiftInfo struct {
 	GiftName   string `json:"giftName"`
 	GiftType   int    `json:"giftType"`
 	CoinType   string `json:"coin_type"` // 礼物类型 silver(银瓜子) gold(金瓜子)
+	TotalCoin int `json:"total_coin"`
 	Gold       int    `json:"gold"`
 	// Medal       interface{} `json:"medal"`
 	Metadata string `json:"metadata"`
@@ -193,6 +194,7 @@ type GiftInfo struct {
 	} `json:"top_list"`
 	UID   int    `json:"uid"`
 	Uname string `json:"uname"`
+	Face string `json:"face"`
 }
 
 // GetGiftInfo 获取礼物信息
