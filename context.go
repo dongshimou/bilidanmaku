@@ -81,16 +81,17 @@ type DanmuInfo struct {
 }
 
 // GetDanmuInfo 在Handler中调用，从simplejson.Json中提取弹幕信息
-func (p *Context) GetDanmuInfo() (dInfo DanmuInfo) {
-	dInfo.Text, _ = p.Msg.Get("info").GetIndex(1).String()
-	dInfo.Uname, _ = p.Msg.Get("info").GetIndex(2).GetIndex(1).String()
-	dInfo.UID, _ = p.Msg.Get("info").GetIndex(2).GetIndex(0).Int()
-	dInfo.MedalLevel, _ = p.Msg.Get("info").GetIndex(3).GetIndex(0).Int()
-	dInfo.MedalName, _ = p.Msg.Get("info").GetIndex(3).GetIndex(1).String()
-	dInfo.MedalAnchor, _ = p.Msg.Get("info").GetIndex(3).GetIndex(2).String()
-	dInfo.Level, _ = p.Msg.Get("info").GetIndex(4).GetIndex(0).Int()
-	dInfo.Rank, _ = p.Msg.Get("info").GetIndex(4).GetIndex(2).Int()
-	return
+func (p *Context) GetDanmuInfo() *DanmuInfo {
+	res := &DanmuInfo{}
+	res.Text, _ = p.Msg.Get("info").GetIndex(1).String()
+	res.Uname, _ = p.Msg.Get("info").GetIndex(2).GetIndex(1).String()
+	res.UID, _ = p.Msg.Get("info").GetIndex(2).GetIndex(0).Int()
+	res.MedalLevel, _ = p.Msg.Get("info").GetIndex(3).GetIndex(0).Int()
+	res.MedalName, _ = p.Msg.Get("info").GetIndex(3).GetIndex(1).String()
+	res.MedalAnchor, _ = p.Msg.Get("info").GetIndex(3).GetIndex(2).String()
+	res.Level, _ = p.Msg.Get("info").GetIndex(4).GetIndex(0).Int()
+	res.Rank, _ = p.Msg.Get("info").GetIndex(4).GetIndex(2).Int()
+	return res
 }
 
 // GetOnlineNumber 在Handler中调用，从simplejson.Json中提取房间在线人气值
@@ -106,11 +107,12 @@ type WelcomeGuardInfo struct {
 }
 
 // GetWelcomeGuardInfo 在Handler中调用，从一个simplejson.Json中提取管理进房信息
-func (p *Context) GetWelcomeGuardInfo() (wInfo WelcomeGuardInfo) {
-	wInfo.GuardLevel = p.Msg.Get("data").Get("guard_level").MustString()
-	wInfo.UID = p.Msg.Get("data").Get("uid").MustInt()
-	wInfo.Username = p.Msg.Get("data").Get("username").MustString()
-	return
+func (p *Context) GetWelcomeGuardInfo() *WelcomeGuardInfo {
+	res := &WelcomeGuardInfo{}
+	res.GuardLevel = p.Msg.Get("data").Get("guard_level").MustString()
+	res.UID = p.Msg.Get("data").Get("uid").MustInt()
+	res.Username = p.Msg.Get("data").Get("username").MustString()
+	return res
 }
 
 // WelcomeInfo 普通人员进房信息
@@ -123,13 +125,14 @@ type WelcomeInfo struct {
 }
 
 // GetWelcomeInfo 在Handler中调用，从一个simplejson.Json中提取普通人员进房信息
-func (p *Context) GetWelcomeInfo() (wInfo WelcomeInfo) {
-	wInfo.IsAdmin = p.Msg.Get("data").Get("is_admin").MustBool() || p.Msg.Get("data").Get("isadmin").MustBool()
-	wInfo.UID = p.Msg.Get("data").Get("uid").MustInt()
-	wInfo.Uname = p.Msg.Get("data").Get("uname").MustString()
-	wInfo.Vip = p.Msg.Get("data").Get("vip").MustInt()
-	wInfo.Svip = p.Msg.Get("data").Get("svip").MustInt()
-	return
+func (p *Context) GetWelcomeInfo() *WelcomeInfo {
+	res := &WelcomeInfo{}
+	res.IsAdmin = p.Msg.Get("data").Get("is_admin").MustBool() || p.Msg.Get("data").Get("isadmin").MustBool()
+	res.UID = p.Msg.Get("data").Get("uid").MustInt()
+	res.Uname = p.Msg.Get("data").Get("uname").MustString()
+	res.Vip = p.Msg.Get("data").Get("vip").MustInt()
+	res.Svip = p.Msg.Get("data").Get("svip").MustInt()
+	return res
 }
 
 // GiftInfo 礼物信息
@@ -194,41 +197,41 @@ type GiftInfo struct {
 
 // GetGiftInfo 获取礼物信息
 func (p *Context) GetGiftInfo() *GiftInfo {
-	gInfo := &GiftInfo{}
+	res := &GiftInfo{}
 	jbytes, _ := p.Msg.Get("data").Encode()
 	jbytes = bytes.Replace(jbytes, []byte(`"beatId":0,`), []byte(`"beatId":"0",`), -1)
 	jbytes = bytes.Replace(jbytes, []byte(`"rnd":0,`), []byte(`"rnd":"0",`), -1)
-	if err := json.Unmarshal(jbytes, gInfo); err != nil {
+	if err := json.Unmarshal(jbytes, res); err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(string(jbytes))
-		gInfo.Action = p.Msg.Get("data").Get("action").MustString()
-		gInfo.AddFollow = p.Msg.Get("data").Get("addFollow").MustInt()
-		gInfo.BeatID = p.Msg.Get("data").Get("beatId").MustString()
-		gInfo.BizSource = p.Msg.Get("data").Get("biz_source").MustString()
-		gInfo.EventNum = p.Msg.Get("data").Get("eventNum").MustInt()
-		gInfo.EventScore = p.Msg.Get("data").Get("eventScore").MustInt()
-		gInfo.GiftID = p.Msg.Get("data").Get("giftId").MustInt()
-		gInfo.GiftName = p.Msg.Get("data").Get("giftName").MustString()
-		gInfo.GiftType = p.Msg.Get("data").Get("giftType").MustInt()
-		gInfo.Gold = p.Msg.Get("data").Get("gold").MustInt()
-		// gInfo.Medal = p.Msg.Get("data").Get("medal")
-		gInfo.Metadata = p.Msg.Get("data").Get("metadata").MustString()
-		gInfo.NewMedal = p.Msg.Get("data").Get("newMedal").MustInt()
-		gInfo.NewTitle = p.Msg.Get("data").Get("newTitle").MustInt()
-		// gInfo.NoticeMsg = p.Msg.Get("data").Get("")
-		gInfo.Num = p.Msg.Get("data").Get("num").MustInt()
-		gInfo.Price = p.Msg.Get("data").Get("price").MustInt()
-		gInfo.Rcost = p.Msg.Get("data").Get("rcost").MustInt()
-		gInfo.Remain = p.Msg.Get("data").Get("remain").MustInt()
-		gInfo.Rnd = p.Msg.Get("data").Get("rnd").MustString()
-		gInfo.Silver = p.Msg.Get("data").Get("silver").MustInt()
-		// gInfo.SmalltvMsg = p.Msg.Get("data").Get("")
-		// gInfo.SpecialGift = p.Msg.Get("data").Get("")
-		gInfo.Super = p.Msg.Get("data").Get("super").MustInt()
-		gInfo.Timestamp = p.Msg.Get("data").Get("timestamp").MustInt()
-		gInfo.Title = p.Msg.Get("data").Get("title").MustString()
+		res.Action = p.Msg.Get("data").Get("action").MustString()
+		res.AddFollow = p.Msg.Get("data").Get("addFollow").MustInt()
+		res.BeatID = p.Msg.Get("data").Get("beatId").MustString()
+		res.BizSource = p.Msg.Get("data").Get("biz_source").MustString()
+		res.EventNum = p.Msg.Get("data").Get("eventNum").MustInt()
+		res.EventScore = p.Msg.Get("data").Get("eventScore").MustInt()
+		res.GiftID = p.Msg.Get("data").Get("giftId").MustInt()
+		res.GiftName = p.Msg.Get("data").Get("giftName").MustString()
+		res.GiftType = p.Msg.Get("data").Get("giftType").MustInt()
+		res.Gold = p.Msg.Get("data").Get("gold").MustInt()
+		// res.Medal = p.Msg.Get("data").Get("medal")
+		res.Metadata = p.Msg.Get("data").Get("metadata").MustString()
+		res.NewMedal = p.Msg.Get("data").Get("newMedal").MustInt()
+		res.NewTitle = p.Msg.Get("data").Get("newTitle").MustInt()
+		// res.NoticeMsg = p.Msg.Get("data").Get("")
+		res.Num = p.Msg.Get("data").Get("num").MustInt()
+		res.Price = p.Msg.Get("data").Get("price").MustInt()
+		res.Rcost = p.Msg.Get("data").Get("rcost").MustInt()
+		res.Remain = p.Msg.Get("data").Get("remain").MustInt()
+		res.Rnd = p.Msg.Get("data").Get("rnd").MustString()
+		res.Silver = p.Msg.Get("data").Get("silver").MustInt()
+		// res.SmalltvMsg = p.Msg.Get("data").Get("")
+		// res.SpecialGift = p.Msg.Get("data").Get("")
+		res.Super = p.Msg.Get("data").Get("super").MustInt()
+		res.Timestamp = p.Msg.Get("data").Get("timestamp").MustInt()
+		res.Title = p.Msg.Get("data").Get("title").MustString()
 	}
-	return gInfo
+	return res
 }
 
 type NoticeMsg struct {
@@ -236,9 +239,10 @@ type NoticeMsg struct {
 }
 
 // GetNoticeMsg 获取系统消息通知
-func (p *Context) GetNoticeMsg() (nMsg NoticeMsg) {
-	nMsg.MsgCommon = p.Msg.Get("msg_common").MustString()
-	return
+func (p *Context) GetNoticeMsg() *NoticeMsg {
+	res := &NoticeMsg{}
+	res.MsgCommon = p.Msg.Get("msg_common").MustString()
+	return res
 }
 
 type SuperChatMsg struct {
@@ -283,19 +287,19 @@ type SuperChatMsg struct {
 
 // 获取付费留言
 func (p *Context) GetSuperChatMsg() *SuperChatMsg {
-	msg := &SuperChatMsg{}
+	res := &SuperChatMsg{}
 	jbytes, _ := p.Msg.Get("data").Encode()
-	if err := json.Unmarshal(jbytes, msg); err != nil {
+	if err := json.Unmarshal(jbytes, res); err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(string(jbytes))
-		msg.Uid = p.Msg.Get("data").Get("uid").MustInt64()
-		msg.Price = p.Msg.Get("data").Get("price").MustFloat64()
-		msg.Message = p.Msg.Get("data").Get("message").MustString()
-		msg.UserInfo.Uname = p.Msg.Get("data").Get("user_info").Get("uname").MustString()
-		msg.UserInfo.Face = p.Msg.Get("data").Get("user_info").Get("face").MustString()
-		msg.Time = p.Msg.Get("data").Get("time").MustInt64()
-		msg.StartTime = p.Msg.Get("data").Get("start_time").MustInt64()
-		msg.EndTime = p.Msg.Get("data").Get("end_time").MustInt64()
+		res.Uid = p.Msg.Get("data").Get("uid").MustInt64()
+		res.Price = p.Msg.Get("data").Get("price").MustFloat64()
+		res.Message = p.Msg.Get("data").Get("message").MustString()
+		res.UserInfo.Uname = p.Msg.Get("data").Get("user_info").Get("uname").MustString()
+		res.UserInfo.Face = p.Msg.Get("data").Get("user_info").Get("face").MustString()
+		res.Time = p.Msg.Get("data").Get("time").MustInt64()
+		res.StartTime = p.Msg.Get("data").Get("start_time").MustInt64()
+		res.EndTime = p.Msg.Get("data").Get("end_time").MustInt64()
 	}
-	return msg
+	return res
 }

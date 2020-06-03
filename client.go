@@ -6,13 +6,11 @@ import (
 	"compress/zlib"
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
-	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -50,9 +48,6 @@ var log = logrus.New()
 
 func init() {
 	formatter := new(prefixed.TextFormatter)
-	//formatter.CallerPrettyfier= func(frame *runtime.Frame) (function string, file string) {
-	//	return frame.Function,fmt.Sprintf("%s:%d",frame.File,frame.Line)
-	//}
 	formatter.FullTimestamp = true
 	formatter.TimestampFormat = "15:04:05"
 	log.Formatter = formatter
@@ -61,27 +56,6 @@ func init() {
 }
 
 func (f HandleFunc) HandleFunc(context *Context) { f(context) }
-
-// 获取直播间长号
-func getRealRoomID(rid int) (realID int, err error) {
-	resp, err := http.Get(fmt.Sprintf("http://api.live.bilibili.com/room/v1/Room/room_init?id=%d", rid))
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	var res roomInitResult
-	jbytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	if err = json.Unmarshal(jbytes, &res); err != nil {
-		return
-	}
-	if res.Code == 0 {
-		return res.Data.RoomID, nil
-	}
-	return 0, fmt.Errorf(res.Message)
-}
 
 type BiliLiveClient struct {
 	ctx             context.Context
@@ -163,21 +137,8 @@ func (bili *BiliLiveClient) RegHandleFunc(cmd CmdType, hfunc HandleFunc) {
 }
 
 func (bili *BiliLiveClient) websockConnet(roomId int) error {
-	// 获取ws服务器地址
-	res, err := http.Get(fmt.Sprintf("https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id=%d&platform=pc&player=web", roomId))
+	conf, err := getWsServer(roomId)
 	if err != nil {
-		log.Error(err)
-		return err
-	}
-	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	conf := &responseDanmuConf{}
-	if err := json.Unmarshal(data, conf); err != nil {
-		log.Error(err)
 		return err
 	}
 	bili.conf = conf
@@ -215,6 +176,7 @@ func (bili *BiliLiveClient) Write(data []byte) error {
 	}
 	return nil
 }
+
 func (bili *BiliLiveClient) recv(buf []byte, l int) error {
 	if _, err := io.ReadAtLeast(bili.tcpConn, buf, l); err != nil {
 		return err
