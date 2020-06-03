@@ -27,7 +27,7 @@ func main() {
 ```
 #### 事件订阅
 如果你希望订阅不同的事件，请尝试`bilidanmaku.Cmd*`开头的一系列常量。
-以下是一些示例,你也可以随时在example目录下查看.
+以下是一些示例,你也可以随时在`/bilidanmaku`目录下查看.
 
 *订阅弹幕事件，并输出弹幕信息*
 
@@ -83,8 +83,8 @@ bili.RegHandleFunc(bilidanmaku.CmdPreparing, func(c *bilidanmaku.Context) bool {
 	log.Println("主播正在躺尸")
 })
 ```
-*返回值*
-Handler和HandleFunc的返回值用于控制调用链是否继续向下执行。 
+*Abort*
+
 如果你希望其它调用链不响应,调用`c.Abort()`
 
 ## 消息调试
