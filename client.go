@@ -154,7 +154,7 @@ func (bili *BiliLiveClient) Run() {
 	}
 }
 
-func (bili *BiliLiveClient) RegHandler(cmd CmdType, handler Handler) {
+func (bili *BiliLiveClient) regHandler(cmd CmdType, handler Handler) {
 	bili.handlerMutex.Lock()
 	defer bili.handlerMutex.Unlock()
 	funcAddr := append(bili.handlerMap[cmd], handler)
@@ -162,22 +162,25 @@ func (bili *BiliLiveClient) RegHandler(cmd CmdType, handler Handler) {
 }
 
 func (bili *BiliLiveClient) RegHandleFunc(cmd CmdType, hfunc HandleFunc) {
-	bili.RegHandler(cmd, hfunc)
+	bili.regHandler(cmd, hfunc)
 }
 
 func (bili *BiliLiveClient) websockConnet(roomId int) error {
 	// 获取ws服务器地址
 	res, err := http.Get(fmt.Sprintf("https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id=%d&platform=pc&player=web", roomId))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	defer res.Body.Close()
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	conf := &ResponseDanmuConf{}
 	if err := json.Unmarshal(data, conf); err != nil {
+		log.Error(err)
 		return err
 	}
 	bili.conf = conf
