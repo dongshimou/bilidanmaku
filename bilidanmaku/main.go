@@ -27,7 +27,6 @@ func init() {
 func main() {
 	var roomid int
 	flag.IntVar(&roomid, "room", 1, "直播房间号")
-
 	flag.Parse()
 
 	bili := bilidanmaku.NewBiliBiliClient()

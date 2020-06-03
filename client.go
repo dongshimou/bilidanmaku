@@ -25,6 +25,27 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type CmdType string
+type HandleFunc func(c *Context)
+
+// 连接类型
+type ConnType string
+
+const (
+	min        = 10000000
+	max        = 2000000000
+	defaultCap = 8192
+)
+
+const (
+	webSocket = ConnType("websocket")
+	tcp       = ConnType("tcp")
+)
+
+type handler interface {
+	HandleFunc(c *Context)
+}
+
 var log = logrus.New()
 
 func init() {
@@ -38,21 +59,6 @@ func init() {
 	log.Level = logrus.InfoLevel
 	log.SetReportCaller(true)
 }
-
-const (
-	min        = 10000000
-	max        = 2000000000
-	defaultCap = 8192
-)
-
-// CmdType cmd const,Cmd开头的一系列常量
-type CmdType string
-
-type Handler interface {
-	HandleFunc(c *Context)
-}
-
-type HandleFunc func(c *Context)
 
 func (f HandleFunc) HandleFunc(context *Context) { f(context) }
 
@@ -77,14 +83,6 @@ func getRealRoomID(rid int) (realID int, err error) {
 	return 0, fmt.Errorf(res.Message)
 }
 
-// 连接类型
-type ConnType string
-
-const (
-	WebSocket = ConnType("websocket")
-	Tcp       = ConnType("tcp")
-)
-
 type BiliLiveClient struct {
 	ctx             context.Context
 	cal             context.CancelFunc
@@ -94,12 +92,12 @@ type BiliLiveClient struct {
 	ChatHost        string
 	tcpConn         net.Conn
 	uid             int
-	handlerMap      map[CmdType]([]Handler)
+	handlerMap      map[CmdType]([]handler)
 	handlerMutex    sync.RWMutex
 	connected       bool
 	eventChan       chan Context
 	connectType     ConnType
-	conf            *ResponseDanmuConf
+	conf            *responseDanmuConf
 	wsConn          *websocket.Conn
 	oldOnline       uint32
 }
@@ -111,7 +109,7 @@ func NewBiliBiliClient() *BiliLiveClient {
 	bili.ChatPort = 788
 	// version=2 deflate 新增的flate压缩 2020/04/20
 	bili.protocolVersion = 2
-	bili.handlerMap = make(map[CmdType]([]Handler))
+	bili.handlerMap = make(map[CmdType]([]handler))
 	bili.eventChan = make(chan Context, defaultCap)
 	bili.handlerMutex = sync.RWMutex{}
 	go bili.Run()
@@ -119,7 +117,7 @@ func NewBiliBiliClient() *BiliLiveClient {
 }
 
 // 获取事件function
-func (bili *BiliLiveClient) getCmdFunc(cmd CmdType) []Handler {
+func (bili *BiliLiveClient) getCmdFunc(cmd CmdType) []handler {
 	bili.handlerMutex.RLock()
 	defer bili.handlerMutex.RUnlock()
 	return bili.handlerMap[cmd]
@@ -154,11 +152,10 @@ func (bili *BiliLiveClient) Run() {
 	}
 }
 
-func (bili *BiliLiveClient) regHandler(cmd CmdType, handler Handler) {
+func (bili *BiliLiveClient) regHandler(cmd CmdType, handler handler) {
 	bili.handlerMutex.Lock()
 	defer bili.handlerMutex.Unlock()
-	funcAddr := append(bili.handlerMap[cmd], handler)
-	bili.handlerMap[cmd] = funcAddr
+	bili.handlerMap[cmd] = append(bili.handlerMap[cmd], handler)
 }
 
 func (bili *BiliLiveClient) RegHandleFunc(cmd CmdType, hfunc HandleFunc) {
@@ -178,7 +175,7 @@ func (bili *BiliLiveClient) websockConnet(roomId int) error {
 		log.Error(err)
 		return err
 	}
-	conf := &ResponseDanmuConf{}
+	conf := &responseDanmuConf{}
 	if err := json.Unmarshal(data, conf); err != nil {
 		log.Error(err)
 		return err
@@ -205,12 +202,12 @@ func (bili *BiliLiveClient) websockConnet(roomId int) error {
 
 func (bili *BiliLiveClient) Write(data []byte) error {
 	switch bili.connectType {
-	case WebSocket:
+	case webSocket:
 		{
 			return bili.wsConn.WriteMessage(websocket.TextMessage, data)
 		}
 
-	case Tcp:
+	case tcp:
 		{
 			_, err := bili.tcpConn.Write(data)
 			return err
@@ -254,12 +251,12 @@ func (bili *BiliLiveClient) ConnectServer(roomID int) error {
 	}
 	log.Info("开始进入房间...", roomId)
 	// 默认方式为websocket (原tcp来源于官方弹幕姬,貌似协议有改动)
-	bili.connectType = WebSocket
+	bili.connectType = webSocket
 	bili.ctx, bili.cal = context.WithCancel(context.Background())
 	switch bili.connectType {
-	case WebSocket:
+	case webSocket:
 		return bili.websockConnet(roomId)
-	case Tcp:
+	case tcp:
 		return bili.tcpConnet(roomId)
 	}
 	return nil
@@ -273,10 +270,10 @@ func (bili *BiliLiveClient) heartbeatLoop() {
 		heartData string
 	)
 	switch bili.connectType {
-	case WebSocket:
+	case webSocket:
 		ticker = time.NewTicker(time.Second * 30)
-		heartData = WsHeart
-	case Tcp:
+		heartData = _WsHeart
+	case tcp:
 		ticker = time.NewTicker(time.Second * 5)
 		heartData = ""
 	}
@@ -372,7 +369,7 @@ func (bili *BiliLiveClient) wsRecv() error {
 		return nil
 	}
 	msg.Data = buf[msg.Hlen:]
-	// log.Debug("websocket head==>",msg.Head," data len:",len(msg.Data)," data :",string(msg.Data),"<==")
+	// log.Debug("websocket head==>",msg._Head," data len:",len(msg.Data)," data :",string(msg.Data),"<==")
 	switch msg.Action {
 	case 1, 2, 3:
 		// heart beat response
@@ -399,21 +396,21 @@ func (bili *BiliLiveClient) wsRecv() error {
 }
 
 func (bili *BiliLiveClient) tcpRecv() error {
-	buf := make([]byte, HeadLength)
-	if err := bili.recv(buf, HeadLength); err != nil {
+	buf := make([]byte, _HeadLength)
+	if err := bili.recv(buf, _HeadLength); err != nil {
 		log.Error(err)
 		return err
 	}
 	msg := parseHead(buf)
-	bLen := int(msg.Blen - HeadLength)
+	bLen := int(msg.Blen - _HeadLength)
 	if bLen <= 0 {
 		return nil
 	}
 	log.Debug("tcp head==>", buf)
 	switch msg.Action {
 	case 1, 2, 3: // 3 心跳
-		buf = make([]byte, HeartLength)
-		if err := bili.recv(buf, HeartLength); err != nil {
+		buf = make([]byte, _HeartLength)
+		if err := bili.recv(buf, _HeartLength); err != nil {
 			log.Error(err)
 			return err
 		}
@@ -450,7 +447,7 @@ func (bili *BiliLiveClient) tcpRecv() error {
 }
 
 func (bili *BiliLiveClient) receiveMessageLoop() (err error) {
-	defer CatchThrowHandle(func(e error) {
+	defer catchThrowHandle(func(e error) {
 		bili.connected = false
 		bili.cal()
 		err = e
@@ -458,9 +455,9 @@ func (bili *BiliLiveClient) receiveMessageLoop() (err error) {
 	for bili.connected {
 		if err := func() error {
 			switch bili.connectType {
-			case Tcp:
+			case tcp:
 				return bili.tcpRecv()
-			case WebSocket:
+			case webSocket:
 				return bili.wsRecv()
 			}
 			return nil
@@ -575,7 +572,7 @@ func (bili *BiliLiveClient) callCmdHandlerChain(c *Context) {
 	bili.eventChan <- *c
 }
 
-func CatchThrowHandle(handle func(err error)) {
+func catchThrowHandle(handle func(err error)) {
 	if p := recover(); p != nil {
 		if e, ok := p.(error); ok {
 			handle(e)

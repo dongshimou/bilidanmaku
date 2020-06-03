@@ -1,24 +1,24 @@
 package bilidanmaku
 
-type ResponseDanmuConf struct {
+type responseDanmuConf struct {
 	Code    int                   `json:"code"`
 	Msg     string                `json:"msg"`
 	Message string                `json:"message"`
-	Data    ResponseDanmuConfData `json:"data"`
+	Data    responseDanmuConfData `json:"data"`
 }
 
-type ResponseDanmuConfData struct {
+type responseDanmuConfData struct {
 	RefreshRowFactor float64                       `json:"refresh_row_factor"`
 	RefreshRate      int                           `json:"refresh_rate"`
 	MaxDelay         int                           `json:"max_delay"`
 	Port             int                           `json:"port"`
 	Host             string                        `json:"host"`
-	HostServerList   []ResponseDanmuConfDataServer `json:"host_server_list"`
-	ServerList       []ResponseDanmuConfDataServer `json:"server_list"`
+	HostServerList   []responseDanmuConfDataServer `json:"host_server_list"`
+	ServerList       []responseDanmuConfDataServer `json:"server_list"`
 	Token            string                        `json:"token"`
 }
 
-type ResponseDanmuConfDataServer struct {
+type responseDanmuConfDataServer struct {
 	Host    string `json:"host"`
 	Port    int    `json:"port"`
 	WssPort int    `json:"wss_port,omitempty"`
